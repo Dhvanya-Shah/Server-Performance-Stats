@@ -1,47 +1,69 @@
-
 #!/bin/bash
 
-echo "===== Server Performance Stats ====="
+if [ "$EUID" -ne 0 ]; then
+  echo "Run as root to access all stats."
+  exit 1
+fi
 
-# Total CPU usage
-echo "CPU Usage:"
-top -bn1 | grep "Cpu(s)" | awk '{print "Usage: " $2 + $4 "%"}'
+echo "--------------------------"
+echo " Server Performance Stats"
+echo "--------------------------"
 
-# Total memory usage
-echo -e "\nMemory Usage:"
-free -m | awk 'NR==2{printf "Used: %sMB (%.2f%%), Free: %sMB (%.2f%%)\n", $3, $3*100/$2, $4, $4*100/$2}'
+# CPU Usage
+echo "Total CPU Usage:"
+cpu_usage=$(top -bn1 | grep "Cpu(s)" | \
+awk '{print 100 - $8 "%"}')
+echo "CPU Usage: $cpu_usage"
 
-# Total disk usage
-echo -e "\nDisk Usage:"
-df -h --total | awk '$NF=="total"{printf "Used: %s, Free: %s (%.2f%%)\n", $3, $4, $5}'
+# Memory Usage
+echo ""
+echo "Memory Usage:"
+free_output=$(free -m)
+total_mem=$(echo "$free_output" | awk '/Mem/ {print $2}')
+used_mem=$(echo "$free_output" | awk '/Mem/ {print $3}')
+free_mem=$(echo "$free_output" | awk '/Mem/ {print $4}')
+mem_percentage=$(( used_mem * 100 / total_mem ))
+echo "Total: ${total_mem}MB"
+echo "Used: ${used_mem}MB"
+echo "Free: ${free_mem}MB"
+echo "Memory Usage: $mem_percentage%"
 
-# Top 5 processes by CPU usage
-echo -e "\nTop 5 Processes by CPU Usage:"
-ps aux --sort=-%cpu | head -n 6 | awk '{print $1, $2, $3, $4, $11}'
+# Disk Usage
+echo ""
+echo "Disk Usage:"
+disk_usage=$(df -h --total | grep 'total' | awk '{print $3 " used / " $2 " total (" $5 " used)"}')
+echo "$disk_usage"
 
-# Top 5 processes by memory usage
-echo -e "\nTop 5 Processes by Memory Usage:"
-ps aux --sort=-%mem | head -n 6 | awk '{print $1, $2, $3, $4, $11}'
+# Top 5 Processes by CPU Usage
+echo ""
+echo "Top 5 Processes by CPU Usage:"
+ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -n 6
 
-# Stretch goal: Additional stats
-echo -e "\n===== Additional System Info ====="
+# Top 5 Processes by Memory Usage
+echo ""
+echo "Top 5 Processes by Memory Usage:"
+ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -n 6
 
-# OS version
-echo "OS Version:"
-lsb_release -a 2>/dev/null || cat /etc/os-release
+echo ""
+echo "--------------------------"
+echo " Additional System Stats"
+echo "--------------------------"
 
-# System uptime
-echo -e "\nSystem Uptime:"
-uptime -p
+# OS Version
+echo "OS Version: $(cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2)"
 
-# Load average
-echo -e "\nLoad Average (1, 5, 15 minutes):"
-uptime | awk -F'load average:' '{ print $2 }'
+# Uptime
+echo "Uptime: $(uptime -p)"
 
-# Logged-in users
-echo -e "\nLogged-in Users:"
-who
+# Load Average
+echo "Load Average: $(uptime | awk -F'load average:' '{ print $2 }')"
 
-# Failed login attempts
-echo -e "\nFailed Login Attempts:"
-grep "Failed password" /var/log/auth.log | wc -l 2>/dev/null || echo "Log file not found or permission denied"
+# Logged in Users
+echo "Logged in Users: $(who | wc -l)"
+
+# Failed Login Attempts
+echo "Failed Login Attempts:"
+awk '$0 ~ /Failed password/ {print $0}' /var/log/auth.log 2>/dev/null | wc -l || echo "Log not accessible."
+
+echo ""
+echo "Script execution completed."
