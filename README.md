@@ -16,7 +16,7 @@ Clone the repository:
 
 Just clone the repository in your folder of choice and enter to the folder:
 
-git clone https://github.com/brandonmdz/server-performance-stats.git
+git clone https://github.com/Dhvanya-Shah/Server-Performance-Stats.git
 cd server-performance-stats
 Make the script executable:
 
