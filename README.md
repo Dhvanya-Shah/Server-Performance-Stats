@@ -9,3 +9,18 @@ Total memory usage (Free vs Used including percentage)
 Total disk usage (Free vs Used including percentage)
 Top 5 processes by CPU usage
 Top 5 processes by memory usage
+
+
+Usage
+Clone the repository:
+
+Just clone the repository in your folder of choice and enter to the folder:
+
+git clone https://github.com/brandonmdz/server-performance-stats.git
+cd server-performance-stats
+Make the script executable:
+
+chmod +x server-stats.sh
+Run the script:
+
+./server-stats.sh
